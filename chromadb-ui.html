@@ -853,7 +853,7 @@
     <div class="chroma-status">
       <div class="status-row">
         <span><span class="status-dot"></span>Connected</span>
-        <span style="color:var(--accent);font-weight:700">v0.5.x</span>
+        <span id="sidebar-version" style="color:var(--accent);font-weight:700">v0.6.x+</span>
       </div>
       <div class="status-url" id="sidebar-url">localhost:8000</div>
     </div>
@@ -1366,7 +1366,7 @@ function loadDemo() {
 
 // ── API ──
 function apiUrl(path) {
-  return `http://${state.host}:${state.port}/api/v1${path}`;
+  return `http://${state.host}:${state.port}/api/v2${path}`;
 }
 
 async function chromaGet(path) {
@@ -1394,11 +1394,17 @@ async function connectChroma() {
   try {
     const version = await chromaGet('/version').catch(() => null);
     if (!version) throw new Error('Could not reach server');
+    
+    // Chroma /version sometimes returns a JSON string, so strip quotes if present
+    const cleanVersion = typeof version === 'string' ? version.replace(/"/g, '') : version;
 
     state.connected = true;
     closeModal('connect');
     document.getElementById('sidebar-url').textContent = `${state.host}:${state.port}`;
     document.getElementById('stat-host').textContent = `${state.host}:${state.port}`;
+    
+    const verEl = document.getElementById('sidebar-version');
+    if (verEl) verEl.textContent = `v${cleanVersion}`;
 
     await refreshData();
     toast('✓ Connected to ChromaDB!');
