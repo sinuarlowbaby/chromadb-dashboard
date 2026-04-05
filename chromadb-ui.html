@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ChromaDB UI · CareerLens AI</title>
+<title>ChromaDB Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -85,27 +85,16 @@
     gap: 10px;
   }
 
-  .logo-icon {
-    width: 32px; height: 32px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px;
-  }
-
   .logo-text {
-    font-family: 'Syne', sans-serif;
-    font-weight: 800;
-    font-size: 14px;
-    letter-spacing: 0.02em;
-  }
-
-  .logo-sub {
-    font-size: 9px;
-    color: var(--text2);
-    letter-spacing: 0.12em;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: 0.05em;
+    background: linear-gradient(90deg, #e6edf3, #00d4aa);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
     text-transform: uppercase;
-    margin-top: 1px;
   }
 
   .chroma-status {
@@ -842,11 +831,7 @@
   <aside class="sidebar">
     <div class="logo">
       <div class="logo-badge">
-        <div class="logo-icon">🎯</div>
-        <div>
-          <div class="logo-text">ChromaDB</div>
-          <div class="logo-sub">CareerLens AI</div>
-        </div>
+        <div class="logo-text">ChromaDB</div>
       </div>
     </div>
 
@@ -886,9 +871,9 @@
   <main class="main">
     <div class="topbar">
       <div class="breadcrumb" id="breadcrumb">
-        <span>CareerLens</span>
+        <span>Dashboard</span>
         <span>›</span>
-        <span class="active">Dashboard</span>
+        <span class="active">Overview</span>
       </div>
       <div class="topbar-actions">
         <button class="btn btn-ghost" onclick="refreshData()">↺ Refresh</button>
@@ -1090,7 +1075,7 @@
       <div class="view" id="view-integration">
         <div class="panel fade-in">
           <div class="panel-header">
-            <span class="panel-title">⇌ CareerLens FastAPI Integration</span>
+            <span class="panel-title">⇌ FastAPI Integration</span>
             <span class="panel-badge">Setup Guide</span>
           </div>
           <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
@@ -1119,7 +1104,7 @@ Port: 8001
             </div>
 
             <div>
-              <div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:500">4. CareerLens FastAPI — chroma_client.py</div>
+              <div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:500">4. FastAPI — chroma_client.py</div>
               <div class="code-block"><span class="code-kw">import</span> chromadb
 <span class="code-kw">from</span> chromadb.config <span class="code-kw">import</span> Settings
 
@@ -1130,7 +1115,7 @@ Port: 8001
     settings=Settings(anonymized_telemetry=<span class="code-kw">False</span>)
 )
 
-<span class="code-comment"># Collections for CareerLens</span>
+<span class="code-comment"># Application Collections</span>
 resume_coll = client.<span class="code-fn">get_or_create_collection</span>(
     name=<span class="code-str">"resume_chunks"</span>,
     metadata={<span class="code-str">"hnsw:space"</span>: <span class="code-str">"cosine"</span>}
@@ -1185,7 +1170,7 @@ app.<span class="code-fn">add_middleware</span>(
             </div>
 
             <div style="background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.2);border-radius:8px;padding:14px 16px;">
-              <div style="font-size:11px;color:var(--accent);font-weight:700;margin-bottom:6px">💡 Pro tip for CareerLens hybrid search</div>
+              <div style="font-size:11px;color:var(--accent);font-weight:700;margin-bottom:6px">💡 Pro tip for hybrid search</div>
               <div style="font-size:11px;color:var(--text2);line-height:1.6">
                 Since you're using FAISS+BM25 hybrid retrieval, ChromaDB works best as a <strong style="color:var(--text)">persistent store</strong> for your chunks.
                 Store chunks once → query with ChromaDB → re-rank with your CrossEncoder → pass to LLM.
@@ -1304,7 +1289,7 @@ const DEMO_COLLECTIONS = [
   {
     id: 'resume_chunks',
     name: 'resume_chunks',
-    count: 142,
+    count: 0,
     metadata: { 'hnsw:space': 'cosine' },
     color: 'var(--accent)',
     emoji: '📄'
@@ -1312,7 +1297,7 @@ const DEMO_COLLECTIONS = [
   {
     id: 'job_descriptions',
     name: 'job_descriptions',
-    count: 87,
+    count: 0,
     metadata: { 'hnsw:space': 'cosine' },
     color: 'var(--accent2)',
     emoji: '💼'
@@ -1320,7 +1305,7 @@ const DEMO_COLLECTIONS = [
   {
     id: 'interview_qa',
     name: 'interview_qa',
-    count: 56,
+    count: 0,
     metadata: { 'hnsw:space': 'cosine' },
     color: 'var(--accent3)',
     emoji: '🎤'
@@ -1328,7 +1313,7 @@ const DEMO_COLLECTIONS = [
   {
     id: 'skills_taxonomy',
     name: 'skills_taxonomy',
-    count: 312,
+    count: 0,
     metadata: { 'hnsw:space': 'cosine' },
     color: 'var(--accent4)',
     emoji: '🧠'
@@ -1342,7 +1327,7 @@ const DEMO_DOCS = [
   { id: 'doc-004', document: 'Implemented CrossEncoder reranking to improve retrieval precision in RAG systems.', metadata: { type: 'project', source: 'resume', page: 3 } },
   { id: 'doc-005', document: 'Qdrant vector database integration for scalable similarity search and persistent storage.', metadata: { type: 'skill', source: 'resume', page: 3 } },
   { id: 'doc-006', document: 'MCA student specializing in Generative AI, LLMs, and full-stack AI application development.', metadata: { type: 'education', source: 'resume', page: 1 } },
-  { id: 'doc-007', document: 'CareerLens AI — Full-stack resume analyzer and AI career coaching web application.', metadata: { type: 'project', source: 'resume', page: 4 } },
+  { id: 'doc-007', document: 'Full-stack resume analyzer and AI career coaching web application.', metadata: { type: 'project', source: 'resume', page: 4 } },
   { id: 'doc-008', document: 'Google OAuth integration with glassmorphism UI design for modern web applications.', metadata: { type: 'project', source: 'resume', page: 4 } },
   { id: 'doc-009', document: 'SQL database design and query optimization for high-performance data retrieval.', metadata: { type: 'skill', source: 'resume', page: 2 } },
   { id: 'doc-010', document: 'HyDE (Hypothetical Document Embeddings) for improved RAG query expansion.', metadata: { type: 'skill', source: 'resume', page: 5 } },
@@ -1780,7 +1765,7 @@ function exportData() {
     collections: state.collections,
     demo_mode: !state.connected
   };
-  download('careerlens-chroma-export.json', JSON.stringify(data, null, 2));
+  download('chroma-export.json', JSON.stringify(data, null, 2));
   toast('↓ Export downloaded');
 }
 
@@ -1815,9 +1800,9 @@ function showView(name, el) {
     });
   }
 
-  const names = { dashboard: 'Dashboard', collections: 'Collections', query: 'Vector Query', integration: 'Integration' };
+  const names = { dashboard: 'Overview', collections: 'Collections', query: 'Vector Query', integration: 'Integration' };
   document.getElementById('breadcrumb').innerHTML = `
-    <span>CareerLens</span><span>›</span><span class="active">${names[name]}</span>
+    <span>Dashboard</span><span>›</span><span class="active">${names[name]}</span>
   `;
 }
 
