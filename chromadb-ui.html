@@ -1,0 +1,1854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChromaDB UI · CareerLens AI</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c10;
+    --surface: #0d1117;
+    --surface2: #161b22;
+    --surface3: #1c2333;
+    --border: #21262d;
+    --border2: #30363d;
+    --accent: #00d4aa;
+    --accent2: #7c6af7;
+    --accent3: #f0883e;
+    --accent4: #58a6ff;
+    --danger: #f85149;
+    --text: #e6edf3;
+    --text2: #8b949e;
+    --text3: #484f58;
+    --glow: rgba(0, 212, 170, 0.15);
+    --glow2: rgba(124, 106, 247, 0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,170,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,170,0.03) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Ambient glow blobs */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px;
+    right: -200px;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(124,106,247,0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; display: flex; height: 100vh; }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 240px;
+    min-width: 240px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .logo {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+
+  .logo-text {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+  }
+
+  .logo-sub {
+    font-size: 9px;
+    color: var(--text2);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 1px;
+  }
+
+  .chroma-status {
+    margin: 12px 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 10px;
+    color: var(--text2);
+  }
+
+  .status-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
+    animation: pulse 2s infinite;
+    display: inline-block;
+    margin-right: 6px;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .status-url {
+    color: var(--accent4);
+    font-size: 9px;
+    word-break: break-all;
+  }
+
+  .sidebar-section {
+    padding: 8px 12px 4px;
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text3);
+    font-weight: 500;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    margin: 1px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--text2);
+    transition: all 0.15s;
+    border: 1px solid transparent;
+  }
+
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active {
+    background: var(--surface3);
+    color: var(--accent);
+    border-color: rgba(0,212,170,0.2);
+  }
+
+  .nav-icon { font-size: 14px; width: 16px; text-align: center; }
+
+  .collection-list {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 12px;
+  }
+
+  .collection-list::-webkit-scrollbar { width: 3px; }
+  .collection-list::-webkit-scrollbar-track { background: transparent; }
+  .collection-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .coll-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 16px;
+    margin: 1px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--text2);
+    transition: all 0.15s;
+    border: 1px solid transparent;
+  }
+
+  .coll-item:hover { background: var(--surface2); color: var(--text); }
+  .coll-item.active {
+    background: rgba(124,106,247,0.1);
+    color: var(--accent2);
+    border-color: rgba(124,106,247,0.2);
+  }
+
+  .coll-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .coll-count {
+    margin-left: auto;
+    font-size: 9px;
+    background: var(--surface3);
+    padding: 1px 5px;
+    border-radius: 10px;
+    color: var(--text3);
+  }
+
+  .sidebar-footer {
+    border-top: 1px solid var(--border);
+    padding: 10px 16px;
+    font-size: 10px;
+    color: var(--text3);
+  }
+
+  /* ── Main ── */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .topbar {
+    height: 52px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 12px;
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  .breadcrumb span { color: var(--text3); }
+
+  .breadcrumb .active { color: var(--text); font-weight: 500; }
+
+  .topbar-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .btn {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-ghost {
+    background: var(--surface2);
+    color: var(--text2);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { border-color: var(--border2); color: var(--text); }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+    font-weight: 700;
+  }
+  .btn-primary:hover { opacity: 0.85; box-shadow: 0 0 16px var(--glow); }
+
+  .btn-danger { background: rgba(248,81,73,0.12); color: var(--danger); border: 1px solid rgba(248,81,73,0.2); }
+  .btn-danger:hover { background: rgba(248,81,73,0.2); }
+
+  .content { flex: 1; overflow-y: auto; padding: 24px; }
+  .content::-webkit-scrollbar { width: 4px; }
+  .content::-webkit-scrollbar-track { background: transparent; }
+  .content::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* ── Stats Row ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .stat-card:hover { border-color: var(--border2); }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--c, var(--accent)), transparent);
+  }
+
+  .stat-label {
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 28px;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .stat-sub {
+    font-size: 10px;
+    color: var(--text3);
+    margin-top: 4px;
+  }
+
+  .stat-icon {
+    position: absolute;
+    top: 14px; right: 14px;
+    font-size: 18px;
+    opacity: 0.3;
+  }
+
+  /* ── Panel ── */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface2);
+  }
+
+  .panel-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .panel-badge {
+    font-size: 9px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--surface3);
+    color: var(--text2);
+    border: 1px solid var(--border2);
+  }
+
+  .panel-actions { margin-left: auto; display: flex; gap: 8px; }
+
+  /* ── Collection Cards ── */
+  .collections-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .coll-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .coll-card:hover {
+    border-color: var(--c, var(--accent));
+    box-shadow: 0 0 20px rgba(0,212,170,0.06);
+    transform: translateY(-1px);
+  }
+
+  .coll-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--c, var(--accent)), transparent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .coll-card:hover::after { opacity: 1; }
+
+  .coll-card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .coll-avatar {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .coll-card-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    margin-bottom: 2px;
+    color: var(--text);
+    word-break: break-all;
+  }
+
+  .coll-card-meta {
+    font-size: 10px;
+    color: var(--text3);
+  }
+
+  .coll-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .metric {
+    background: var(--surface);
+    border-radius: 6px;
+    padding: 8px 10px;
+  }
+
+  .metric-label { font-size: 8px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; }
+  .metric-val { font-size: 16px; font-weight: 700; color: var(--text); margin-top: 2px; }
+
+  .coll-card-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 12px;
+  }
+
+  /* ── Table ── */
+  .table-wrap { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  thead tr {
+    border-bottom: 1px solid var(--border2);
+    background: var(--surface2);
+  }
+
+  th {
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+    cursor: pointer;
+  }
+
+  tbody tr:hover { background: var(--surface2); }
+  tbody tr:last-child { border-bottom: none; }
+
+  td {
+    padding: 10px 16px;
+    color: var(--text);
+    vertical-align: top;
+  }
+
+  .td-id {
+    font-size: 10px;
+    color: var(--accent4);
+    font-weight: 500;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .td-doc {
+    max-width: 320px;
+    color: var(--text2);
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .td-meta {
+    font-size: 10px;
+    color: var(--text3);
+  }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 9px;
+    border: 1px solid;
+    margin: 1px;
+  }
+
+  .tag-green { color: var(--accent); border-color: rgba(0,212,170,0.3); background: rgba(0,212,170,0.06); }
+  .tag-purple { color: var(--accent2); border-color: rgba(124,106,247,0.3); background: rgba(124,106,247,0.06); }
+  .tag-orange { color: var(--accent3); border-color: rgba(240,136,62,0.3); background: rgba(240,136,62,0.06); }
+  .tag-blue { color: var(--accent4); border-color: rgba(88,166,255,0.3); background: rgba(88,166,255,0.06); }
+
+  /* ── Search + Query ── */
+  .search-bar {
+    display: flex;
+    gap: 8px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .search-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .search-input::placeholder { color: var(--text3); }
+  .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--glow); }
+
+  .select-input {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 8px 10px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  select option { background: var(--surface2); }
+
+  /* ── Vector Query Panel ── */
+  .query-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+
+  .query-textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: none;
+    border-bottom: 1px solid var(--border);
+    padding: 14px 18px;
+    color: var(--text2);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    resize: vertical;
+    min-height: 80px;
+    outline: none;
+  }
+
+  .query-textarea::placeholder { color: var(--text3); }
+  .query-textarea:focus { border-color: var(--accent); color: var(--text); }
+
+  .query-controls {
+    padding: 10px 14px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .query-results {
+    padding: 14px 18px;
+    border-top: 1px solid var(--border);
+  }
+
+  .result-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    transition: border-color 0.15s;
+  }
+
+  .result-item:hover { border-color: var(--accent2); }
+
+  .result-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .result-rank {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px;
+    font-weight: 700;
+    color: #000;
+    flex-shrink: 0;
+  }
+
+  .result-score {
+    font-size: 10px;
+    color: var(--accent);
+    margin-left: auto;
+  }
+
+  .result-doc {
+    font-size: 11px;
+    color: var(--text2);
+    line-height: 1.5;
+  }
+
+  /* ── Page views ── */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── Notification ── */
+  .toast {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: var(--surface2);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 11px;
+    color: var(--accent);
+    z-index: 1000;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s;
+    box-shadow: 0 0 20px var(--glow);
+  }
+
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* ── Empty state ── */
+  .empty {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text3);
+  }
+
+  .empty-icon { font-size: 32px; margin-bottom: 12px; }
+  .empty-text { font-size: 12px; margin-bottom: 6px; color: var(--text2); }
+  .empty-sub { font-size: 10px; }
+
+  /* Loading */
+  .loading {
+    text-align: center;
+    padding: 48px;
+    color: var(--text3);
+    font-size: 11px;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 20px; height: 20px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 12px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Code block */
+  .code-block {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 11px;
+    color: var(--accent4);
+    overflow-x: auto;
+    white-space: pre;
+    line-height: 1.6;
+  }
+
+  .code-comment { color: var(--text3); }
+  .code-kw { color: var(--accent2); }
+  .code-str { color: var(--accent3); }
+  .code-fn { color: var(--accent); }
+
+  /* Connection modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 900;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-overlay.show { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    width: 560px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+  }
+
+  .modal-header {
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .modal-body { padding: 20px; }
+
+  .form-group { margin-bottom: 14px; }
+  .form-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); margin-bottom: 6px; display: block; }
+  .form-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 9px 12px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    outline: none;
+  }
+
+  .form-input:focus { border-color: var(--accent); }
+
+  .modal-footer {
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  /* ── Scroll animations ── */
+  .fade-in {
+    animation: fadeUp 0.4s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* responsive */
+  @media (max-width: 900px) {
+    .sidebar { width: 52px; min-width: 52px; }
+    .logo-text, .logo-sub, .nav-item span, .coll-item span, .coll-count,
+    .chroma-status, .sidebar-section, .sidebar-footer { display: none; }
+    .nav-item, .coll-item { justify-content: center; padding: 10px; }
+    .stats-grid { grid-template-columns: repeat(2,1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-badge">
+        <div class="logo-icon">🎯</div>
+        <div>
+          <div class="logo-text">ChromaDB</div>
+          <div class="logo-sub">CareerLens AI</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chroma-status">
+      <div class="status-row">
+        <span><span class="status-dot"></span>Connected</span>
+        <span style="color:var(--accent);font-weight:700">v0.5.x</span>
+      </div>
+      <div class="status-url" id="sidebar-url">localhost:8000</div>
+    </div>
+
+    <div class="sidebar-section">Navigation</div>
+    <div class="nav-item active" onclick="showView('dashboard',this)">
+      <span class="nav-icon">⬡</span><span>Dashboard</span>
+    </div>
+    <div class="nav-item" onclick="showView('collections',this)">
+      <span class="nav-icon">◈</span><span>Collections</span>
+    </div>
+    <div class="nav-item" onclick="showView('query',this)">
+      <span class="nav-icon">⌗</span><span>Vector Query</span>
+    </div>
+    <div class="nav-item" onclick="showView('integration',this)">
+      <span class="nav-icon">⇌</span><span>Integration</span>
+    </div>
+
+    <div class="sidebar-section">Collections</div>
+    <div class="collection-list" id="sidebar-collections">
+      <!-- Populated by JS -->
+    </div>
+
+    <div class="sidebar-footer">
+      <div>⬡ ChromaDB UI v1.0</div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main">
+    <div class="topbar">
+      <div class="breadcrumb" id="breadcrumb">
+        <span>CareerLens</span>
+        <span>›</span>
+        <span class="active">Dashboard</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost" onclick="refreshData()">↺ Refresh</button>
+        <button class="btn btn-ghost" onclick="showModal('settings')">⚙ Settings</button>
+        <button class="btn btn-primary" onclick="showModal('connect')">+ Connect</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="view active" id="view-dashboard">
+        <div class="stats-grid fade-in">
+          <div class="stat-card" style="--c:var(--accent)">
+            <div class="stat-icon">◈</div>
+            <div class="stat-label">Collections</div>
+            <div class="stat-value" id="stat-collections">—</div>
+            <div class="stat-sub">Active databases</div>
+          </div>
+          <div class="stat-card" style="--c:var(--accent2)">
+            <div class="stat-icon">⬡</div>
+            <div class="stat-label">Total Documents</div>
+            <div class="stat-value" id="stat-docs">—</div>
+            <div class="stat-sub">Across all collections</div>
+          </div>
+          <div class="stat-card" style="--c:var(--accent3)">
+            <div class="stat-icon">⌗</div>
+            <div class="stat-label">Embedding Dims</div>
+            <div class="stat-value" id="stat-dims">768</div>
+            <div class="stat-sub">all-MiniLM-L6-v2</div>
+          </div>
+          <div class="stat-card" style="--c:var(--accent4)">
+            <div class="stat-icon">⚡</div>
+            <div class="stat-label">Status</div>
+            <div class="stat-value" style="font-size:18px;padding-top:4px" id="stat-status">● Live</div>
+            <div class="stat-sub" id="stat-host">localhost:8000</div>
+          </div>
+        </div>
+
+        <div class="panel fade-in">
+          <div class="panel-header">
+            <span class="panel-title">Collections Overview</span>
+            <span class="panel-badge" id="coll-badge">0 collections</span>
+            <div class="panel-actions">
+              <button class="btn btn-ghost" onclick="showView('collections',null)">View All</button>
+            </div>
+          </div>
+          <div class="collections-grid" id="dashboard-collections">
+            <div class="loading"><div class="spinner"></div><br>Connect to ChromaDB to load collections</div>
+          </div>
+        </div>
+
+        <div class="panel fade-in">
+          <div class="panel-header">
+            <span class="panel-title">Quick Actions</span>
+          </div>
+          <div style="padding:16px; display:grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap:10px;">
+            <div class="coll-card" style="--c:var(--accent)" onclick="showView('query',null)">
+              <div style="font-size:24px;margin-bottom:8px">⌗</div>
+              <div class="coll-card-name">Vector Search</div>
+              <div class="coll-card-meta">Query embeddings semantically</div>
+            </div>
+            <div class="coll-card" style="--c:var(--accent2)" onclick="showView('collections',null)">
+              <div style="font-size:24px;margin-bottom:8px">◈</div>
+              <div class="coll-card-name">Browse Data</div>
+              <div class="coll-card-meta">Explore all documents</div>
+            </div>
+            <div class="coll-card" style="--c:var(--accent3)" onclick="showView('integration',null)">
+              <div style="font-size:24px;margin-bottom:8px">⇌</div>
+              <div class="coll-card-name">Integration Guide</div>
+              <div class="coll-card-meta">Connect with FastAPI</div>
+            </div>
+            <div class="coll-card" style="--c:var(--accent4)" onclick="exportData()">
+              <div style="font-size:24px;margin-bottom:8px">↓</div>
+              <div class="coll-card-name">Export Data</div>
+              <div class="coll-card-meta">Download as JSON</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COLLECTIONS -->
+      <div class="view" id="view-collections">
+        <div class="panel fade-in">
+          <div class="panel-header">
+            <span class="panel-title">All Collections</span>
+            <span class="panel-badge" id="coll-count-badge">—</span>
+            <div class="panel-actions">
+              <button class="btn btn-ghost" onclick="refreshData()">↺ Refresh</button>
+              <button class="btn btn-primary" onclick="showModal('add-collection')">+ New</button>
+            </div>
+          </div>
+          <div class="search-bar">
+            <input class="search-input" placeholder="Filter collections..." oninput="filterCollections(this.value)" />
+            <select class="select-input" id="sort-select" onchange="sortCollections(this.value)">
+              <option value="name">Sort: Name</option>
+              <option value="count">Sort: Count</option>
+            </select>
+          </div>
+          <div class="collections-grid" id="all-collections">
+            <div class="loading"><div class="spinner"></div><br>Loading...</div>
+          </div>
+        </div>
+
+        <!-- Document Browser -->
+        <div class="panel fade-in" id="doc-panel" style="display:none">
+          <div class="panel-header">
+            <span class="panel-title" id="doc-panel-title">Documents</span>
+            <span class="panel-badge" id="doc-count-badge">—</span>
+            <div class="panel-actions">
+              <button class="btn btn-ghost" id="doc-export-btn" onclick="exportCurrentCollection()">↓ Export</button>
+              <button class="btn btn-danger" id="doc-delete-btn">⌫ Delete Collection</button>
+            </div>
+          </div>
+          <div class="search-bar">
+            <input class="search-input" placeholder="Filter by document content or ID..." oninput="filterDocs(this.value)" />
+            <select class="select-input" onchange="changePageSize(this.value)">
+              <option value="10">10 / page</option>
+              <option value="25">25 / page</option>
+              <option value="50">50 / page</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:24px"><input type="checkbox" style="accent-color:var(--accent)"></th>
+                  <th>ID</th>
+                  <th>Document</th>
+                  <th>Metadata</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="doc-tbody">
+                <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text3)">Select a collection to view documents</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;font-size:11px;color:var(--text3)">
+            <span id="page-info">Page 1</span>
+            <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="prevPage()">‹ Prev</button>
+            <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="nextPage()">Next ›</button>
+            <span id="total-info" style="margin-left:auto"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- VECTOR QUERY -->
+      <div class="view" id="view-query">
+        <div class="query-panel fade-in">
+          <div class="panel-header">
+            <span class="panel-title">⌗ Semantic Vector Query</span>
+            <span class="panel-badge">RAG Retrieval</span>
+          </div>
+          <textarea class="query-textarea" id="query-text" placeholder="Enter your query text here... e.g. 'Experience with Python and machine learning frameworks'"></textarea>
+          <div class="query-controls">
+            <select class="select-input" id="query-collection">
+              <option value="">Select collection...</option>
+            </select>
+            <select class="select-input" id="query-n">
+              <option value="5">Top 5</option>
+              <option value="10">Top 10</option>
+              <option value="20">Top 20</option>
+            </select>
+            <button class="btn btn-primary" onclick="runQuery()">⌗ Run Query</button>
+            <button class="btn btn-ghost" onclick="clearQuery()">✕ Clear</button>
+            <span style="font-size:10px;color:var(--text3);margin-left:auto">Uses cosine similarity · all-MiniLM-L6-v2</span>
+          </div>
+          <div class="query-results" id="query-results" style="display:none">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.1em">Results</div>
+            <div id="result-items"></div>
+          </div>
+        </div>
+
+        <div class="panel fade-in">
+          <div class="panel-header">
+            <span class="panel-title">Metadata Filter Query</span>
+            <span class="panel-badge">WHERE clause</span>
+          </div>
+          <div style="padding:14px 18px;display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--border)">
+            <input class="search-input" style="max-width:200px" id="meta-key" placeholder="metadata key (e.g. type)" />
+            <select class="select-input" id="meta-op">
+              <option>$eq</option><option>$ne</option><option>$gt</option><option>$gte</option><option>$lt</option><option>$lte</option>
+            </select>
+            <input class="search-input" style="max-width:200px" id="meta-val" placeholder="value" />
+            <button class="btn btn-primary" onclick="runMetaQuery()">Filter</button>
+          </div>
+          <div style="padding:14px 18px;" id="meta-results">
+            <div class="empty">
+              <div class="empty-icon">⌗</div>
+              <div class="empty-text">Metadata filter results will appear here</div>
+              <div class="empty-sub">Filter documents by their metadata fields</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- INTEGRATION -->
+      <div class="view" id="view-integration">
+        <div class="panel fade-in">
+          <div class="panel-header">
+            <span class="panel-title">⇌ CareerLens FastAPI Integration</span>
+            <span class="panel-badge">Setup Guide</span>
+          </div>
+          <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+
+            <div>
+              <div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:500">1. Install ChromaDB</div>
+              <div class="code-block"><span class="code-comment"># Install via pip</span>
+pip install chromadb sentence-transformers</div>
+            </div>
+
+            <div>
+              <div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:500">2. Start ChromaDB Server (HTTP mode)</div>
+              <div class="code-block"><span class="code-comment"># Run as a standalone HTTP server</span>
+chroma run --path ./chroma_data --host 0.0.0.0 --port 8001
+
+<span class="code-comment"># Or with Docker</span>
+docker run -p 8001:8000 -v ./chroma_data:/chroma/chroma chromadb/chroma</div>
+            </div>
+
+            <div>
+              <div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:500">3. Connect this UI to your server</div>
+              <div class="code-block"><span class="code-comment"># Click "Connect" in the top right and enter:</span>
+Host: localhost
+Port: 8001
+<span class="code-comment"># (or your deployed server URL)</span></div>
+            </div>
+
+            <div>
+              <div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:500">4. CareerLens FastAPI — chroma_client.py</div>
+              <div class="code-block"><span class="code-kw">import</span> chromadb
+<span class="code-kw">from</span> chromadb.config <span class="code-kw">import</span> Settings
+
+<span class="code-comment"># HTTP client (connects to running server)</span>
+<span class="code-fn">client</span> = chromadb.HttpClient(
+    host=<span class="code-str">"localhost"</span>,
+    port=<span class="code-str">8001</span>,
+    settings=Settings(anonymized_telemetry=<span class="code-kw">False</span>)
+)
+
+<span class="code-comment"># Collections for CareerLens</span>
+resume_coll = client.<span class="code-fn">get_or_create_collection</span>(
+    name=<span class="code-str">"resume_chunks"</span>,
+    metadata={<span class="code-str">"hnsw:space"</span>: <span class="code-str">"cosine"</span>}
+)
+
+jd_coll = client.<span class="code-fn">get_or_create_collection</span>(
+    name=<span class="code-str">"job_descriptions"</span>,
+    metadata={<span class="code-str">"hnsw:space"</span>: <span class="code-str">"cosine"</span>}
+)
+
+interview_coll = client.<span class="code-fn">get_or_create_collection</span>(
+    name=<span class="code-str">"interview_qa"</span>,
+    metadata={<span class="code-str">"hnsw:space"</span>: <span class="code-str">"cosine"</span>}
+)</div>
+            </div>
+
+            <div>
+              <div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:500">5. RAG Retrieval in your FastAPI route</div>
+              <div class="code-block"><span class="code-kw">from</span> sentence_transformers <span class="code-kw">import</span> SentenceTransformer
+<span class="code-kw">from</span> fastapi <span class="code-kw">import</span> FastAPI
+
+app = <span class="code-fn">FastAPI</span>()
+embedder = <span class="code-fn">SentenceTransformer</span>(<span class="code-str">"all-MiniLM-L6-v2"</span>)
+
+<span class="code-kw">@app.post</span>(<span class="code-str">"/analyze"</span>)
+<span class="code-kw">async def</span> <span class="code-fn">analyze_resume</span>(query: str, n_results: int = 5):
+    query_embed = embedder.<span class="code-fn">encode</span>([query]).<span class="code-fn">tolist</span>()
+    
+    results = resume_coll.<span class="code-fn">query</span>(
+        query_embeddings=query_embed,
+        n_results=n_results,
+        include=[<span class="code-str">"documents"</span>, <span class="code-str">"metadatas"</span>, <span class="code-str">"distances"</span>]
+    )
+    
+    <span class="code-kw">return</span> {
+        <span class="code-str">"chunks"</span>: results[<span class="code-str">"documents"</span>][0],
+        <span class="code-str">"metadata"</span>: results[<span class="code-str">"metadatas"</span>][0],
+        <span class="code-str">"scores"</span>: results[<span class="code-str">"distances"</span>][0]
+    }</div>
+            </div>
+
+            <div>
+              <div style="font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:500">6. Add CORS for this UI (FastAPI)</div>
+              <div class="code-block"><span class="code-kw">from</span> fastapi.middleware.cors <span class="code-kw">import</span> CORSMiddleware
+
+app.<span class="code-fn">add_middleware</span>(
+    CORSMiddleware,
+    allow_origins=[<span class="code-str">"*"</span>],  <span class="code-comment"># or specific origin</span>
+    allow_methods=[<span class="code-str">"*"</span>],
+    allow_headers=[<span class="code-str">"*"</span>],
+)</div>
+            </div>
+
+            <div style="background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.2);border-radius:8px;padding:14px 16px;">
+              <div style="font-size:11px;color:var(--accent);font-weight:700;margin-bottom:6px">💡 Pro tip for CareerLens hybrid search</div>
+              <div style="font-size:11px;color:var(--text2);line-height:1.6">
+                Since you're using FAISS+BM25 hybrid retrieval, ChromaDB works best as a <strong style="color:var(--text)">persistent store</strong> for your chunks.
+                Store chunks once → query with ChromaDB → re-rank with your CrossEncoder → pass to LLM.
+                This gives you a visual admin UI (this page) without changing your retrieval pipeline.
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Connect Modal -->
+<div class="modal-overlay" id="modal-connect">
+  <div class="modal">
+    <div class="modal-header">
+      <span style="font-size:18px">⬡</span>
+      <span class="panel-title">Connect to ChromaDB</span>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Host</label>
+        <input class="form-input" id="input-host" value="localhost" placeholder="localhost or IP" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Port</label>
+        <input class="form-input" id="input-port" value="8001" placeholder="8001" />
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:10px;color:var(--text3);margin-top:4px">
+        ℹ️ Start ChromaDB with: <span style="color:var(--accent4)">chroma run --path ./chroma_data --port 8001</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('connect')">Cancel</button>
+      <button class="btn btn-primary" onclick="connectChroma()">Connect</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="modal-settings">
+  <div class="modal">
+    <div class="modal-header">
+      <span style="font-size:18px">⚙</span>
+      <span class="panel-title">Settings</span>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Default Page Size</label>
+        <select class="form-input" id="setting-pagesize">
+          <option>10</option><option selected>25</option><option>50</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Auto-refresh interval (seconds, 0 = off)</label>
+        <input class="form-input" id="setting-refresh" value="0" type="number" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('settings')">Close</button>
+      <button class="btn btn-primary" onclick="saveSettings()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Collection Modal -->
+<div class="modal-overlay" id="modal-add-collection">
+  <div class="modal">
+    <div class="modal-header">
+      <span style="font-size:18px">◈</span>
+      <span class="panel-title">New Collection</span>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Collection Name</label>
+        <input class="form-input" id="new-coll-name" placeholder="e.g. resume_chunks" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Distance Metric</label>
+        <select class="form-input" id="new-coll-metric">
+          <option value="cosine">cosine (recommended for embeddings)</option>
+          <option value="l2">l2 (Euclidean)</option>
+          <option value="ip">ip (Inner Product)</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('add-collection')">Cancel</button>
+      <button class="btn btn-primary" onclick="createCollection()">Create</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ──
+let state = {
+  host: 'localhost',
+  port: '8001',
+  collections: [],
+  currentCollection: null,
+  currentDocs: [],
+  filteredDocs: [],
+  page: 0,
+  pageSize: 10,
+  connected: false,
+  baseUrl: ''
+};
+
+// DEMO data (shown when not connected)
+const DEMO_COLLECTIONS = [
+  {
+    id: 'resume_chunks',
+    name: 'resume_chunks',
+    count: 142,
+    metadata: { 'hnsw:space': 'cosine' },
+    color: 'var(--accent)',
+    emoji: '📄'
+  },
+  {
+    id: 'job_descriptions',
+    name: 'job_descriptions',
+    count: 87,
+    metadata: { 'hnsw:space': 'cosine' },
+    color: 'var(--accent2)',
+    emoji: '💼'
+  },
+  {
+    id: 'interview_qa',
+    name: 'interview_qa',
+    count: 56,
+    metadata: { 'hnsw:space': 'cosine' },
+    color: 'var(--accent3)',
+    emoji: '🎤'
+  },
+  {
+    id: 'skills_taxonomy',
+    name: 'skills_taxonomy',
+    count: 312,
+    metadata: { 'hnsw:space': 'cosine' },
+    color: 'var(--accent4)',
+    emoji: '🧠'
+  }
+];
+
+const DEMO_DOCS = [
+  { id: 'doc-001', document: 'Proficient in Python, FastAPI, and building REST APIs for production environments.', metadata: { type: 'skill', source: 'resume', page: 1 } },
+  { id: 'doc-002', document: 'Built a hybrid RAG pipeline combining FAISS dense retrieval with BM25 sparse retrieval.', metadata: { type: 'project', source: 'resume', page: 2 } },
+  { id: 'doc-003', document: 'Experience with PyTorch, training custom neural networks and GAN-inspired architectures.', metadata: { type: 'skill', source: 'resume', page: 2 } },
+  { id: 'doc-004', document: 'Implemented CrossEncoder reranking to improve retrieval precision in RAG systems.', metadata: { type: 'project', source: 'resume', page: 3 } },
+  { id: 'doc-005', document: 'Qdrant vector database integration for scalable similarity search and persistent storage.', metadata: { type: 'skill', source: 'resume', page: 3 } },
+  { id: 'doc-006', document: 'MCA student specializing in Generative AI, LLMs, and full-stack AI application development.', metadata: { type: 'education', source: 'resume', page: 1 } },
+  { id: 'doc-007', document: 'CareerLens AI — Full-stack resume analyzer and AI career coaching web application.', metadata: { type: 'project', source: 'resume', page: 4 } },
+  { id: 'doc-008', document: 'Google OAuth integration with glassmorphism UI design for modern web applications.', metadata: { type: 'project', source: 'resume', page: 4 } },
+  { id: 'doc-009', document: 'SQL database design and query optimization for high-performance data retrieval.', metadata: { type: 'skill', source: 'resume', page: 2 } },
+  { id: 'doc-010', document: 'HyDE (Hypothetical Document Embeddings) for improved RAG query expansion.', metadata: { type: 'skill', source: 'resume', page: 5 } },
+];
+
+const COLORS = ['var(--accent)', 'var(--accent2)', 'var(--accent3)', 'var(--accent4)'];
+const EMOJIS = ['📄','💼','🎤','🧠','⚡','🔍','📊','🎯'];
+
+// ── Init ──
+window.onload = () => {
+  loadDemo();
+};
+
+function loadDemo() {
+  state.collections = DEMO_COLLECTIONS;
+  state.currentDocs = DEMO_DOCS;
+  state.filteredDocs = DEMO_DOCS;
+  renderAll();
+  toast('Demo mode — Click "Connect" to link your ChromaDB server', 4000);
+}
+
+// ── API ──
+function apiUrl(path) {
+  return `http://${state.host}:${state.port}/api/v1${path}`;
+}
+
+async function chromaGet(path) {
+  const r = await fetch(apiUrl(path));
+  if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+  return r.json();
+}
+
+async function chromaPost(path, body) {
+  const r = await fetch(apiUrl(path), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+  return r.json();
+}
+
+// ── Connect ──
+async function connectChroma() {
+  state.host = document.getElementById('input-host').value.trim() || 'localhost';
+  state.port = document.getElementById('input-port').value.trim() || '8001';
+
+  toast('Connecting...');
+  try {
+    const version = await chromaGet('/version').catch(() => null);
+    if (!version) throw new Error('Could not reach server');
+
+    state.connected = true;
+    closeModal('connect');
+    document.getElementById('sidebar-url').textContent = `${state.host}:${state.port}`;
+    document.getElementById('stat-host').textContent = `${state.host}:${state.port}`;
+
+    await refreshData();
+    toast('✓ Connected to ChromaDB!');
+  } catch (e) {
+    toast('✗ Connection failed: ' + e.message, 4000);
+    // keep demo data
+  }
+}
+
+async function refreshData() {
+  if (!state.connected) { renderAll(); return; }
+
+  try {
+    const colls = await chromaGet('/collections');
+    state.collections = await Promise.all(colls.map(async (c, i) => {
+      let count = 0;
+      try {
+        const countData = await chromaGet(`/collections/${c.id}/count`);
+        count = countData;
+      } catch {}
+      return {
+        ...c,
+        count,
+        color: COLORS[i % COLORS.length],
+        emoji: EMOJIS[i % EMOJIS.length]
+      };
+    }));
+    renderAll();
+    toast('↺ Refreshed');
+  } catch (e) {
+    toast('Refresh failed: ' + e.message, 3000);
+  }
+}
+
+// ── Render ──
+function renderAll() {
+  renderStats();
+  renderSidebarCollections();
+  renderDashboardCollections();
+  renderAllCollections();
+  populateQuerySelect();
+}
+
+function renderStats() {
+  const total = state.collections.reduce((a, c) => a + (c.count || 0), 0);
+  document.getElementById('stat-collections').textContent = state.collections.length;
+  document.getElementById('stat-docs').textContent = total.toLocaleString();
+  document.getElementById('coll-badge').textContent = `${state.collections.length} collections`;
+  document.getElementById('coll-count-badge').textContent = `${state.collections.length} total`;
+}
+
+function renderSidebarCollections() {
+  const el = document.getElementById('sidebar-collections');
+  el.innerHTML = state.collections.map(c => `
+    <div class="coll-item ${state.currentCollection?.id === c.id ? 'active' : ''}"
+         onclick="selectCollection('${c.id}')">
+      <div class="coll-dot" style="background:${c.color}"></div>
+      <span>${c.name}</span>
+      <span class="coll-count">${(c.count||0).toLocaleString()}</span>
+    </div>
+  `).join('');
+}
+
+function renderDashboardCollections() {
+  const el = document.getElementById('dashboard-collections');
+  if (!state.collections.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">◈</div><div class="empty-text">No collections found</div><div class="empty-sub">Create a collection to get started</div></div>`;
+    return;
+  }
+  el.innerHTML = state.collections.map(c => collCard(c)).join('');
+}
+
+function renderAllCollections() {
+  const el = document.getElementById('all-collections');
+  if (!state.collections.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">◈</div><div class="empty-text">No collections found</div></div>`;
+    return;
+  }
+  el.innerHTML = state.collections.map(c => collCard(c, true)).join('');
+}
+
+function collCard(c, showDelete = false) {
+  return `
+    <div class="coll-card" style="--c:${c.color}" onclick="selectCollection('${c.id}')">
+      <div class="coll-card-header">
+        <div class="coll-avatar" style="background:${c.color}22;color:${c.color}">${c.emoji}</div>
+        <div>
+          <div class="coll-card-name">${c.name}</div>
+          <div class="coll-card-meta">${c.id !== c.name ? c.id.slice(0, 16) + '...' : 'ChromaDB Collection'}</div>
+        </div>
+      </div>
+      <div class="coll-metrics">
+        <div class="metric">
+          <div class="metric-label">Documents</div>
+          <div class="metric-val" style="color:${c.color}">${(c.count||0).toLocaleString()}</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Space</div>
+          <div class="metric-val" style="font-size:12px">${(c.metadata?.['hnsw:space'] || 'cosine')}</div>
+        </div>
+      </div>
+      <div class="coll-card-actions">
+        <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px;flex:1" onclick="event.stopPropagation();selectCollection('${c.id}')">Browse</button>
+        <button class="btn btn-ghost" style="font-size:10px;padding:4px 10px" onclick="event.stopPropagation();queryCollection('${c.id}')">⌗ Query</button>
+      </div>
+    </div>
+  `;
+}
+
+async function selectCollection(id) {
+  state.currentCollection = state.collections.find(c => c.id === id);
+  state.page = 0;
+
+  if (state.connected) {
+    try {
+      const data = await chromaPost(`/collections/${id}/get`, {
+        limit: 1000,
+        include: ['documents', 'metadatas']
+      });
+      state.currentDocs = (data.ids || []).map((docId, i) => ({
+        id: docId,
+        document: data.documents?.[i] || '',
+        metadata: data.metadatas?.[i] || {}
+      }));
+    } catch {
+      state.currentDocs = DEMO_DOCS;
+    }
+  }
+
+  state.filteredDocs = [...state.currentDocs];
+  renderDocPanel();
+  renderSidebarCollections();
+
+  if (document.getElementById('view-dashboard').classList.contains('active')) {
+    showView('collections', null);
+  }
+}
+
+function renderDocPanel() {
+  const panel = document.getElementById('doc-panel');
+  panel.style.display = 'block';
+  document.getElementById('doc-panel-title').textContent = state.currentCollection?.name || 'Documents';
+  document.getElementById('doc-count-badge').textContent = `${state.filteredDocs.length} documents`;
+  document.getElementById('total-info').textContent = `${state.currentDocs.length} total`;
+  renderDocTable();
+}
+
+function renderDocTable() {
+  const tbody = document.getElementById('doc-tbody');
+  const start = state.page * state.pageSize;
+  const slice = state.filteredDocs.slice(start, start + state.pageSize);
+
+  if (!slice.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text3)">No documents found</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = slice.map(d => {
+    const metaTags = Object.entries(d.metadata || {}).map(([k, v]) =>
+      `<span class="tag tag-purple">${k}: ${v}</span>`
+    ).join('');
+    return `
+      <tr>
+        <td><input type="checkbox" style="accent-color:var(--accent)"></td>
+        <td><div class="td-id" title="${d.id}">${d.id}</div></td>
+        <td><div class="td-doc" title="${d.document}">${d.document || '<em style="color:var(--text3)">no content</em>'}</div></td>
+        <td><div class="td-meta">${metaTags || '<span style="color:var(--text3)">—</span>'}</div></td>
+        <td>
+          <button class="btn btn-ghost" style="font-size:9px;padding:3px 8px" onclick="viewDoc('${d.id}')">View</button>
+        </td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('page-info').textContent = `Page ${state.page + 1} of ${Math.ceil(state.filteredDocs.length / state.pageSize) || 1}`;
+}
+
+function filterDocs(q) {
+  q = q.toLowerCase();
+  state.filteredDocs = state.currentDocs.filter(d =>
+    d.id.toLowerCase().includes(q) || (d.document || '').toLowerCase().includes(q)
+  );
+  state.page = 0;
+  renderDocTable();
+  document.getElementById('doc-count-badge').textContent = `${state.filteredDocs.length} documents`;
+}
+
+function filterCollections(q) {
+  q = q.toLowerCase();
+  const filtered = state.collections.filter(c => c.name.toLowerCase().includes(q));
+  document.getElementById('all-collections').innerHTML = filtered.map(c => collCard(c, true)).join('');
+}
+
+function sortCollections(by) {
+  const sorted = [...state.collections].sort((a, b) =>
+    by === 'count' ? (b.count - a.count) : a.name.localeCompare(b.name)
+  );
+  document.getElementById('all-collections').innerHTML = sorted.map(c => collCard(c, true)).join('');
+}
+
+function prevPage() {
+  if (state.page > 0) { state.page--; renderDocTable(); }
+}
+
+function nextPage() {
+  const maxPage = Math.ceil(state.filteredDocs.length / state.pageSize) - 1;
+  if (state.page < maxPage) { state.page++; renderDocTable(); }
+}
+
+function changePageSize(v) { state.pageSize = parseInt(v); state.page = 0; renderDocTable(); }
+
+// ── Query ──
+function populateQuerySelect() {
+  const sel = document.getElementById('query-collection');
+  sel.innerHTML = '<option value="">Select collection...</option>' +
+    state.collections.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+}
+
+function queryCollection(id) {
+  document.getElementById('query-collection').value = id;
+  showView('query', null);
+}
+
+async function runQuery() {
+  const text = document.getElementById('query-text').value.trim();
+  const collId = document.getElementById('query-collection').value;
+  const n = parseInt(document.getElementById('query-n').value);
+
+  if (!text) { toast('Enter a query text first'); return; }
+  if (!collId) { toast('Select a collection'); return; }
+
+  const panel = document.getElementById('query-results');
+  const items = document.getElementById('result-items');
+  panel.style.display = 'block';
+  items.innerHTML = '<div class="loading"><div class="spinner"></div><br>Searching...</div>';
+
+  if (!state.connected) {
+    // Demo results
+    setTimeout(() => {
+      const results = DEMO_DOCS.slice(0, n).map((d, i) => ({
+        ...d, score: (1 - i * 0.08).toFixed(3)
+      }));
+      renderQueryResults(results);
+    }, 800);
+    return;
+  }
+
+  try {
+    const data = await chromaPost(`/collections/${collId}/query`, {
+      query_texts: [text],
+      n_results: n,
+      include: ['documents', 'metadatas', 'distances']
+    });
+    const results = (data.ids?.[0] || []).map((id, i) => ({
+      id,
+      document: data.documents?.[0]?.[i] || '',
+      metadata: data.metadatas?.[0]?.[i] || {},
+      score: (1 - (data.distances?.[0]?.[i] || 0)).toFixed(3)
+    }));
+    renderQueryResults(results);
+  } catch (e) {
+    items.innerHTML = `<div class="empty"><div class="empty-icon">✗</div><div class="empty-text">Query failed</div><div class="empty-sub">${e.message}</div></div>`;
+  }
+}
+
+function renderQueryResults(results) {
+  const items = document.getElementById('result-items');
+  if (!results.length) {
+    items.innerHTML = '<div class="empty"><div class="empty-text">No results found</div></div>';
+    return;
+  }
+  items.innerHTML = results.map((r, i) => {
+    const tags = Object.entries(r.metadata || {}).map(([k, v]) =>
+      `<span class="tag tag-purple">${k}: ${v}</span>`
+    ).join('');
+    return `
+      <div class="result-item">
+        <div class="result-header">
+          <div class="result-rank">${i + 1}</div>
+          <div class="td-id">${r.id}</div>
+          <div class="result-score">score: ${r.score}</div>
+        </div>
+        <div class="result-doc">${r.document}</div>
+        ${tags ? `<div style="margin-top:6px">${tags}</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+function clearQuery() {
+  document.getElementById('query-text').value = '';
+  document.getElementById('query-results').style.display = 'none';
+}
+
+async function runMetaQuery() {
+  const key = document.getElementById('meta-key').value.trim();
+  const op = document.getElementById('meta-op').value;
+  const val = document.getElementById('meta-val').value.trim();
+  const collId = document.getElementById('query-collection').value || state.collections[0]?.id;
+
+  if (!key || !val || !collId) { toast('Fill in key, value, and select a collection in the Vector Query tab'); return; }
+
+  const el = document.getElementById('meta-results');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div><br>Filtering...</div>';
+
+  if (!state.connected) {
+    setTimeout(() => {
+      const filtered = DEMO_DOCS.filter(d => {
+        const v = d.metadata?.[key];
+        if (op === '$eq') return String(v) === val;
+        if (op === '$ne') return String(v) !== val;
+        return true;
+      });
+      renderMetaResults(filtered, key, op, val);
+    }, 600);
+    return;
+  }
+
+  try {
+    const where = { [key]: { [op]: isNaN(val) ? val : Number(val) } };
+    const data = await chromaPost(`/collections/${collId}/get`, {
+      where,
+      limit: 50,
+      include: ['documents', 'metadatas']
+    });
+    const results = (data.ids || []).map((id, i) => ({
+      id,
+      document: data.documents?.[i] || '',
+      metadata: data.metadatas?.[i] || {}
+    }));
+    renderMetaResults(results, key, op, val);
+  } catch (e) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">✗</div><div class="empty-text">${e.message}</div></div>`;
+  }
+}
+
+function renderMetaResults(results, key, op, val) {
+  const el = document.getElementById('meta-results');
+  el.innerHTML = `<div style="font-size:10px;color:var(--text3);margin-bottom:10px">
+    Found <strong style="color:var(--accent)">${results.length}</strong> docs where <span class="tag tag-purple">${key} ${op} "${val}"</span>
+  </div>` + (results.length ? results.map(d => `
+    <div class="result-item">
+      <div class="result-header"><div class="td-id">${d.id}</div></div>
+      <div class="result-doc">${d.document}</div>
+    </div>`).join('') :
+  '<div class="empty"><div class="empty-text">No matching documents</div></div>');
+}
+
+// ── Collection CRUD ──
+async function createCollection() {
+  const name = document.getElementById('new-coll-name').value.trim();
+  const metric = document.getElementById('new-coll-metric').value;
+
+  if (!name) { toast('Enter a collection name'); return; }
+
+  if (!state.connected) {
+    toast('Connect to ChromaDB first');
+    return;
+  }
+
+  try {
+    await chromaPost('/collections', { name, metadata: { 'hnsw:space': metric } });
+    closeModal('add-collection');
+    await refreshData();
+    toast(`✓ Collection "${name}" created`);
+  } catch (e) {
+    toast('Failed: ' + e.message, 3000);
+  }
+}
+
+// ── Export ──
+function exportData() {
+  const data = {
+    exported_at: new Date().toISOString(),
+    collections: state.collections,
+    demo_mode: !state.connected
+  };
+  download('careerlens-chroma-export.json', JSON.stringify(data, null, 2));
+  toast('↓ Export downloaded');
+}
+
+function exportCurrentCollection() {
+  if (!state.currentCollection) { toast('Select a collection first'); return; }
+  const data = {
+    collection: state.currentCollection.name,
+    exported_at: new Date().toISOString(),
+    documents: state.currentDocs
+  };
+  download(`${state.currentCollection.name}-export.json`, JSON.stringify(data, null, 2));
+  toast('↓ Collection exported');
+}
+
+function download(filename, text) {
+  const a = document.createElement('a');
+  a.href = 'data:application/json,' + encodeURIComponent(text);
+  a.download = filename;
+  a.click();
+}
+
+// ── View ──
+function showView(name, el) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (el) el.classList.add('active');
+  else {
+    document.querySelectorAll('.nav-item').forEach(n => {
+      if (n.getAttribute('onclick')?.includes(name)) n.classList.add('active');
+    });
+  }
+
+  const names = { dashboard: 'Dashboard', collections: 'Collections', query: 'Vector Query', integration: 'Integration' };
+  document.getElementById('breadcrumb').innerHTML = `
+    <span>CareerLens</span><span>›</span><span class="active">${names[name]}</span>
+  `;
+}
+
+// ── Modals ──
+function showModal(id) {
+  document.getElementById('modal-' + id).classList.add('show');
+}
+
+function closeModal(id) {
+  document.getElementById('modal-' + id).classList.remove('show');
+}
+
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); });
+});
+
+// ── Toast ──
+let toastTimer;
+function toast(msg, duration = 2000) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), duration);
+}
+
+function saveSettings() {
+  state.pageSize = parseInt(document.getElementById('setting-pagesize').value);
+  closeModal('settings');
+  toast('Settings saved');
+}
+
+function viewDoc(id) {
+  const doc = state.currentDocs.find(d => d.id === id);
+  if (!doc) return;
+  alert(`ID: ${doc.id}\n\nDocument:\n${doc.document}\n\nMetadata:\n${JSON.stringify(doc.metadata, null, 2)}`);
+}
+</script>
+</body>
+</html>
